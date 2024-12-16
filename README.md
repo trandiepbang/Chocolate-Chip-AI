@@ -56,11 +56,11 @@ The backend server will run on `http://localhost:8000`
    ```bash
    npm run dev
    ```
-
 The frontend application will be available at `http://localhost:3000/`
 
 ## Video guide
 
+Uploading Screen Recording 2024-12-16 at 23.34.39.mov…
 
 ## Note
 - Please remmeber set your OPENAI_API_KEY otherwise the app will crash
