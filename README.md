@@ -59,6 +59,9 @@ The backend server will run on `http://localhost:8000`
 
 The frontend application will be available at `http://localhost:3000/`
 
+## Video guide
+
+
 ## Note
 - Please remmeber set your OPENAI_API_KEY otherwise the app will crash
 - If you don't set OPENAI_API_KEY and make it fast, you can run OPENAI_API_KEY=XXX docker compose up --build <= this also work, for example
