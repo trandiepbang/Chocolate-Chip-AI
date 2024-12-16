@@ -16,8 +16,6 @@
    1. Please create virtual env first =>  python3 -m venv .venv  
    2. Active virtualenv => source .venv/bin/activate
    3. Install deps => pip3 install -r requirements.txt
-   4. Apply migration => ./scripts/apply_migration.sh
-   5. Start app => ./scripts/start_app_local.sh
    ```
 
 3. Create a `.env` file in the backend directory with the following variables:
@@ -27,7 +25,8 @@
 
 4. Start the backend server:
    ```bash
-   
+   1. Apply migration => ./scripts/apply_migration.sh
+   2. Start app => ./scripts/start_app_local.sh OR you can do OPENAI_API_KEY=XXX ./scripts/start_app_local.sh
    ```
 
 The backend server will run on `http://localhost:8000`
