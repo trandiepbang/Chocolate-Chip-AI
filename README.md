@@ -43,7 +43,7 @@ https://www.youtube.com/watch?v=SB2FieuDJwI
 4. Start the backend server:
    ```bash
    1. Apply migration => ./scripts/apply_migration.sh
-   2. Start app => ./scripts/start_app_local.sh OR you can do OPENAI_API_KEY=XXX ./scripts/start_app_local.sh
+   2. Start app => ./scripts/start_app_local.sh OR you can do OPENAI_API_KEY=XXX ./scripts/start_app_local.sh (if you don't want set OPENAI_API_KEY in your local machine)
    ```
 
 The backend server will run on `http://localhost:8000`
