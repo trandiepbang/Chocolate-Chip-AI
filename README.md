@@ -60,7 +60,7 @@ The frontend application will be available at `http://localhost:3000/`
 
 ## Video guide
 
-Uploading Screen Recording 2024-12-16 at 23.34.39.mov…
+https://www.youtube.com/watch?v=SB2FieuDJwI
 
 ## Note
 - Please remmeber set your OPENAI_API_KEY otherwise the app will crash
