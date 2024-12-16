@@ -37,7 +37,7 @@ https://www.youtube.com/watch?v=SB2FieuDJwI
 
 3. Create a `.env` file in the backend directory with the following variables:
    ```
-   OPENAI_API_KEY=<your-api-key>
+   set API key to OPENAI_API_KEY variable in your machine
    ```
 
 4. Start the backend server:
