@@ -5,7 +5,7 @@
 - Please remmeber set your OPENAI_API_KEY otherwise the app will crash
 - If you don't set OPENAI_API_KEY and make it fast, you can run OPENAI_API_KEY=XXX docker compose up --build <= this also work, for example
    OPENAI_API_KEY=XXX docker compose up --build
-- YOU MUST setup .env for front end (Watch my video)
+- YOU MUST setup .env for front end (Watch my video 0:37 )
      NEXT_PUBLIC_API_URL=http://localhost:8000
      NEXT_PUBLIC_WEBSOCKET_URL=ws://localhost:8000
    AND OPENAI_API_KEY for backend
