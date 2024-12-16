@@ -8,7 +8,10 @@
    ```
 ### Docker way
 2. RUN docker compose up --build 
-3. OPENAI_API_KEY=XXX docker compose up --build
+3. Start the app 
+   ```
+   OPENAI_API_KEY=XXX docker compose up --build
+   ```
 
 ### Non-docker way
 2. Install dependencies:
