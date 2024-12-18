@@ -29,6 +29,7 @@ export default function Home() {
     isLoading,
     error,
   } = useChatHistoryByIdQuery(currentConverstation?.converstation_id || "");
+  const [mapOfMessageWithId, setmapOfMessageWithId] = useState(new Map<string, string>());
 
   useEffect(() => {
     setConverstation(chatConverstation?.data || []);
@@ -50,14 +51,26 @@ export default function Home() {
     sendMessage,
   } = useWebSocket({
     url: `${WEBSOCKET_BASE_URL}/ws/chat`,
-    onMessage: (data: ChatMessage[]) => {
+    onMessage: (data: any) => {
       setIsSending(false);
       
       try {
-        if (data && data.length > 0) {
-          setChatMessage([...data]);
-          refetchConverstation();
+        console.log(data);
+        if (data.message) {
+          let existingMessages = mapOfMessageWithId.get(data.message_id);
+          if (!existingMessages) {
+            existingMessages = "";
+          }
+
+          existingMessages += data.message;
+          mapOfMessageWithId.set(data.message_id, existingMessages);
+          setmapOfMessageWithId(new Map(mapOfMessageWithId));
+          setChatMessage([data]);
         }
+        // if (data && data.length > 0) {
+        //   setChatMessage([...data]);
+        //   refetchConverstation();
+        // }
       } catch (e) {
         console.log("Received:", data);
         console.error(e);
@@ -106,6 +119,9 @@ export default function Home() {
     scrollToBottom();
   }, [chatHistory]);
 
+  console.log("chatHistory", chatHistory);
+  console.log(mapOfMessageWithId);
+
   return (
     <div className="flex h-screen bg-white dark:bg-gray-800">
       <Sidebar isOpen={sidebarOpen} />
@@ -121,7 +137,7 @@ export default function Home() {
               renderItem={(msg, index) => (
                 <List.Item>
                   {msg.role === "bot" ? (
-                    <BotMessage message={msg} />
+                    <BotMessage message={mapOfMessageWithId.get(msg.message_id)} />
                   ) : (
                     <HumanMessage message={msg} />
                   )}
