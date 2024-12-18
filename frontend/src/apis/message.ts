@@ -8,6 +8,8 @@ export type ChatConverstation = {
 };
 
 export type ChatMessage = {
+  message_id: string;
+  expert_id: string;
   message: string;
   role: "human" | "bot";
   converstation_id: string;

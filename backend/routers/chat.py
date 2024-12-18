@@ -94,28 +94,41 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(databas
             else:
                 converstation_payload = exist_converstation[0]
 
-            expert_asnwer = await answer_as_an_expert(
+            expert_asnwer = answer_as_an_expert(
                 get_expert_by_id(converstation_payload.expert), 
                 data["message"],
                 serialized_history
             )
 
-            bot_message = ChatMessage(
-                role="bot",
-                message=expert_asnwer,
-                converstation_id=data["converstation_id"],
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc)
-            )
-            db.add(bot_message)
-            db.commit()
+            # bot_message = ChatMessage(
+            #     role="bot",
+            #     message=expert_asnwer,
+            #     converstation_id=data["converstation_id"],
+            #     created_at=datetime.now(timezone.utc),
+            #     updated_at=datetime.now(timezone.utc)
+            # )
+            # db.add(bot_message)
+            # db.commit()
 
-            if len(serialized_history) > 1:
-                serialized_history.append(serialize_chat_message(user_message))
-            serialized_history.append(serialize_chat_message(bot_message))
+            final_message = ""
+            async for data_from_bot in expert_asnwer:
+                if data_from_bot is not None:
+                    await websocket.send_json({
+                        "role": "bot",
+                        "message_id": data_from_bot.id,
+                        "message": data_from_bot.choices[0].delta.content
+                    })
+
+                
+            # if len(serialized_history) > 1:
+            #     serialized_history.append(serialize_chat_message(user_message))
+            
+            # serialized_history.append({
+            #     "message"
+            # })
 
             # Send response back to client
-            await websocket.send_text(json.dumps(serialized_history))
+           
 
     except json.JSONDecodeError as je:
         await websocket.send_text(json.dumps({

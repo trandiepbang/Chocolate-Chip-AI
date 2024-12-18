@@ -57,9 +57,12 @@ async def answer_as_an_expert(expert_name: str, query: str, chat_history: any) -
             model="gpt-4",
             messages=messages,
             temperature=0.0,
-            max_tokens=1000
+            max_tokens=1000,
+            stream=True
         )
-
-        return response.choices[0].message.content
+        
+        async for chunk in response:
+            yield chunk
+            
     except Exception as e:
         raise Exception(f"Failed to get expert response: {str(e)}")
