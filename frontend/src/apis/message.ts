@@ -17,6 +17,10 @@ export type ChatMessage = {
   created_at?: Date;
 };
 
+export type Experts = {
+  name: string;
+  id: string;
+}
 export type Response<T> = {
   data: T;
 };
@@ -45,3 +49,15 @@ export const useChatHistoryByIdQuery = (conversation_id: string) => {
     },
   });
 };
+
+export const useExpertList = () => {
+  return useQuery({
+    queryKey: [`expert-list`],
+    queryFn: () =>
+      axios.get<null, Response<Experts[]>>(`/chat/experts`, {}),
+    meta: {
+      hideAppError: false,
+      showAppSpin: true,
+    },
+  });
+}

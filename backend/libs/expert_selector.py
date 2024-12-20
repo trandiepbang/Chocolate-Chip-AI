@@ -48,6 +48,10 @@ EXPERTS: List[Expert] = [
     }
 ]
 
+def get_all_experts() -> List[Expert]:
+    """Returns a list of all available experts"""
+    return EXPERTS
+
 def get_random_expert() -> Expert:
     """Returns a randomly selected expert from the EXPERTS list"""
     return choice(EXPERTS)

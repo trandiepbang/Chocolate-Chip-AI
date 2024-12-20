@@ -7,7 +7,7 @@ from models.converstation import Converstation
 from db import database
 from schemas.response import ResponseModel
 from libs.chat_service import summarize_chat_history, answer_as_an_expert
-from libs.expert_selector import get_random_expert, get_expert_by_id
+from libs.expert_selector import get_random_expert, get_expert_by_id, get_all_experts
 
 router = APIRouter()
 
@@ -19,6 +19,10 @@ async def get_chat_history(db: Session = Depends(database.get_db)):
     if not chat_history:
         return ResponseModel(data=[])
     return ResponseModel(data=chat_history)
+
+@router.get("/chat/experts")
+async def get_experts():
+    return ResponseModel(data=get_all_experts())
 
 @router.get("/chat/history/{conversation_id}")
 async def get_conversation_history(

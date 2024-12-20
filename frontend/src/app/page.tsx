@@ -4,13 +4,14 @@ import Sidebar from "@/modules/Sidebar";
 import ChatHeader from "@/components/ChatHeader";
 import { BotMessage, HumanMessage } from "@/components/Message";
 import { MessageInputWrapper } from "@/modules/MessageInputWrapper";
-import { useChatHistoryByIdQuery, ChatMessage } from "@/apis/message";
+import { useChatHistoryByIdQuery, ChatMessage, Experts } from "@/apis/message";
 import { WEBSOCKET_BASE_URL } from "@/constants/api";
 import { useAppContext } from "@/context/AppContext";
 import { useWebSocket } from "@/hooks/websocket";
-import { useChatHistoryQuery } from "@/apis/message";
+import { useChatHistoryQuery, useExpertList } from "@/apis/message";
 import { v4 as uuidv4 } from "uuid";
 import { List } from "antd";
+import { Select } from "antd";
 
 export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -33,6 +34,8 @@ export default function Home() {
     error,
   } = useChatHistoryByIdQuery(currentConverstation?.converstation_id || "");
 
+  const {data: expertList} = useExpertList();
+
   useEffect(() => {
     setConverstation(chatConverstation?.data || []);
   }, [chatConverstation?.data.length]);
@@ -48,7 +51,7 @@ export default function Home() {
   }, [currentConverstation, setCurrentConverstation]);
 
   const [mapOfMessagesWithId, setMapOfMessagesWithId] = useState(new Map<string, string>());
-  const [selectedExperts, setSelectedExperts] = useState<string[]>(["1"]);
+  const [selectedExperts, setSelectedExperts] = useState<string[]>([]);
 
   let refreshMessage: NodeJS.Timeout | null = null
 
@@ -162,7 +165,20 @@ export default function Home() {
           <div ref={chatContainerRef} className="flex-1 overflow-auto h-full">
             <List
               locale={{
-                emptyText: <span className="text-white">No Data</span>,
+                emptyText: <div className="flex flex-col items-center justify-center justify-center space-y-4">
+                  <span className="text-white">No data</span>
+                  <Select
+                    mode="multiple"
+                    onChange={(value: string[]) => setSelectedExperts(value)}
+                    className="w-[200px]"
+                  >
+                    {expertList?.data.map((expert) => (
+                      <Select.Option key={expert.id} value={expert.id}>
+                        {expert.name}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </div>,
               }}
               dataSource={chatHistory}
               renderItem={(msg, index) => (
