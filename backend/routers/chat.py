@@ -86,7 +86,7 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(databas
 
             if not exist_converstation:
                 converstation_payload.summary = await summarize_chat_history(serialized_history)
-                converstation_payload.expert = get_random_expert()["id"]
+                converstation_payload.expert = data["experts"]
                 converstation_payload.created_at = datetime.now(timezone.utc)
                 converstation_payload.updated_at = datetime.now(timezone.utc)
                 db.add(converstation_payload)
@@ -100,15 +100,15 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(databas
             list_of_experts = converstation_payload.expert.split(",")
             if len(list_of_experts) > 0:
                 for expert_id in list_of_experts:
-                    expert_asnwer = answer_as_an_expert(
+                    expert_asnwer = await answer_as_an_expert(
                         get_expert_by_id(expert_id), 
                         data["message"],
                         serialized_history
                     )
 
                     async for response in expert_asnwer:
-                        if response.choice[0].finish_reason != "stop":
-                            content = response.choice[0].delta.content
+                        if response.choices[0].finish_reason != "stop":
+                            content = response.choices[0].delta.content
                             if response.id not in map_id_to_message:
                                 map_id_to_message[response.id] = {
                                     "message": content,
@@ -124,7 +124,7 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(databas
                             "message_id": response.id,
                             "expert": get_expert_by_id(expert_id),
                             "created_at": datetime.now(timezone.utc).isoformat(),
-                            "is_stop": response.choice[0].finish_reason == "stop",
+                            "is_stop": response.choices[0].finish_reason == "stop",
                             "role":"bot"
                         })
             

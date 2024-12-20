@@ -26,7 +26,10 @@ export default function Home() {
   } = useAppContext();
   const {
     data: historyConverstation,
+    refetch: refetchHistoryConverstation,
     isLoading,
+    isRefetching,
+    isSuccess,
     error,
   } = useChatHistoryByIdQuery(currentConverstation?.converstation_id || "");
 
@@ -44,20 +47,50 @@ export default function Home() {
     }
   }, [currentConverstation, setCurrentConverstation]);
 
+  const [mapOfMessagesWithId, setMapOfMessagesWithId] = useState(new Map<string, string>());
+  const [selectedExperts, setSelectedExperts] = useState<string[]>(["1"]);
+
+  let refreshMessage: NodeJS.Timeout | null = null
+
   const {
     isConnected,
     error: socketError,
     sendMessage,
   } = useWebSocket({
     url: `${WEBSOCKET_BASE_URL}/ws/chat`,
-    onMessage: (data: ChatMessage[]) => {
+    onMessage: (data: ChatMessage) => {
       setIsSending(false);
       
       try {
-        if (data && data.length > 0) {
-          setChatMessage([...data]);
-          refetchConverstation();
+        
+        if (!data.message_id) return;
+        if (!mapOfMessagesWithId.has(data.message_id)) {  
+          setChatMessage((prev) => [...prev, data]);
         }
+
+        let existingMessages = mapOfMessagesWithId.get(data.message_id)
+        if (!existingMessages || existingMessages === "") {
+          existingMessages = ''
+        }
+
+        existingMessages += data.message
+        mapOfMessagesWithId.set(data.message_id, existingMessages)
+        setMapOfMessagesWithId(new Map(mapOfMessagesWithId))
+
+        if (refreshMessage) {
+          clearTimeout(refreshMessage)
+          refreshMessage = null
+        }
+
+
+        if (data.is_stop) {
+            refreshMessage = setTimeout(() => {
+              refetchHistoryConverstation();
+              setIsSending(false);
+          }, 1000);
+        }
+
+        refetchConverstation();
       } catch (e) {
         console.log("Received:", data);
         console.error(e);
@@ -78,21 +111,34 @@ export default function Home() {
       return;
     }
 
+    if (selectedExperts.length <= 0) { 
+      alert("Please select at least one expert");
+      return;
+    }
+
     const messagePayload: ChatMessage = {
       message,
+      created_at: new Date(),
+      experts: selectedExperts.join(","),
       role: "human",
       converstation_id: currentConverstation.converstation_id,
     };
 
     setIsSending(true);
     sendMessage(messagePayload);
+    refetchHistoryConverstation();
   };
 
   useEffect(() => {
-    if (historyConverstation?.data && historyConverstation.data?.length > 0) {
+    if (isRefetching) {
+      console.log("Refetching...");
+    }
+
+    if (isSuccess && !isRefetching) {
       setChatMessage(historyConverstation?.data);
     }
-  }, [historyConverstation]);
+    
+  }, [isRefetching, isSuccess]);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const scrollToBottom = () => {
@@ -106,6 +152,7 @@ export default function Home() {
     scrollToBottom();
   }, [chatHistory]);
 
+  console.log("chatHistory", mapOfMessagesWithId);
   return (
     <div className="flex h-screen bg-white dark:bg-gray-800">
       <Sidebar isOpen={sidebarOpen} />
@@ -121,7 +168,7 @@ export default function Home() {
               renderItem={(msg, index) => (
                 <List.Item>
                   {msg.role === "bot" ? (
-                    <BotMessage message={msg} />
+                    <BotMessage mapOfMessagesWithId={mapOfMessagesWithId} message={msg} />
                   ) : (
                     <HumanMessage message={msg} />
                   )}
