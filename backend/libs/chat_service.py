@@ -33,7 +33,7 @@ async def summarize_chat_history(chat_history: any) -> str:
         raise Exception(f"Failed to summarize chat: {str(e)}")
     
 
-async def answer_as_an_expert(expert_name: str, query: str, chat_history: any) -> str:
+async def answer_as_an_expert(expert_name: str, query: str, chat_history: any):
     try:
         formatted_history = "\n".join([
             f"{msg['role']}: {msg['message']}" 
@@ -57,9 +57,10 @@ async def answer_as_an_expert(expert_name: str, query: str, chat_history: any) -
             model="gpt-4",
             messages=messages,
             temperature=0.0,
-            max_tokens=1000
+            max_tokens=1000,
+            stream=True
         )
 
-        return response.choices[0].message.content
+        return response
     except Exception as e:
         raise Exception(f"Failed to get expert response: {str(e)}")

@@ -94,28 +94,55 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(databas
             else:
                 converstation_payload = exist_converstation[0]
 
-            expert_asnwer = await answer_as_an_expert(
-                get_expert_by_id(converstation_payload.expert), 
-                data["message"],
-                serialized_history
-            )
 
-            bot_message = ChatMessage(
-                role="bot",
-                message=expert_asnwer,
-                converstation_id=data["converstation_id"],
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc)
-            )
-            db.add(bot_message)
+            map_id_to_message = {}
+            message_ids_by_expert = []
+            list_of_experts = converstation_payload.expert.split(",")
+            if len(list_of_experts) > 0:
+                for expert_id in list_of_experts:
+                    expert_asnwer = answer_as_an_expert(
+                        get_expert_by_id(expert_id), 
+                        data["message"],
+                        serialized_history
+                    )
+
+                    async for response in expert_asnwer:
+                        if response.choice[0].finish_reason != "stop":
+                            content = response.choice[0].delta.content
+                            if response.id not in map_id_to_message:
+                                map_id_to_message[response.id] = {
+                                    "message": content,
+                                    "message_id": response.id,
+                                    "expert": expert_id,
+                                }
+                                message_ids_by_expert.append(response.id)
+                            else:
+                                map_id_to_message[response.id]["message"] += content
+
+                        await websocket.send_json({
+                            "message": content,
+                            "message_id": response.id,
+                            "expert": get_expert_by_id(expert_id),
+                            "created_at": datetime.now(timezone.utc).isoformat(),
+                            "is_stop": response.choice[0].finish_reason == "stop",
+                            "role":"bot"
+                        })
+            
+
+            if len(message_ids_by_expert) > 0:
+                for message_id in message_ids_by_expert:
+                    bot_message = ChatMessage(
+                        role="bot",
+                        message=map_id_to_message[message_id]["message"],
+                        converstation_id=converstation_payload.converstation_id,
+                        created_at=datetime.now(timezone.utc),
+                        updated_at=datetime.now(timezone.utc)
+                    )
+                    db.add(bot_message)
+
             db.commit()
 
-            if len(serialized_history) > 1:
-                serialized_history.append(serialize_chat_message(user_message))
-            serialized_history.append(serialize_chat_message(bot_message))
 
-            # Send response back to client
-            await websocket.send_text(json.dumps(serialized_history))
 
     except json.JSONDecodeError as je:
         await websocket.send_text(json.dumps({
