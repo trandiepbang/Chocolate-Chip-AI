@@ -8,6 +8,7 @@ from db import database
 from schemas.response import ResponseModel
 from libs.chat_service import summarize_chat_history, answer_as_an_expert
 from libs.expert_selector import get_random_expert, get_expert_by_id, get_all_experts
+import asyncio
 
 router = APIRouter()
 
@@ -50,6 +51,41 @@ def serialize_chat_message(message: ChatMessage) -> dict:
         "updated_at": message.updated_at.isoformat()
     }
 
+
+async def process_expert_stream(websocket, expert_id, message, history, map_id_to_message, message_ids_by_expert):
+    try:
+        # Await the answer_as_an_expert call here instead of in the main loop
+        stream = await answer_as_an_expert(
+            get_expert_by_id(expert_id),
+            message,
+            history
+        )
+        
+        async for response in stream:
+            if response.choices[0].finish_reason != "stop":
+                content = response.choices[0].delta.content
+                if response.id not in map_id_to_message:
+                    map_id_to_message[response.id] = {
+                        "message": content,
+                        "message_id": response.id,
+                        "expert": expert_id,
+                    }
+                    message_ids_by_expert.append(response.id)
+                else:
+                    map_id_to_message[response.id]["message"] += content
+
+                await websocket.send_json({
+                    "message": content,
+                    "message_id": response.id,
+                    "expert": get_expert_by_id(expert_id),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "is_stop": response.choices[0].finish_reason == "stop",
+                    "role": "bot"
+                })
+                
+    except Exception as e:
+        print(f"Error processing expert {expert_id}: {str(e)}")
+        raise
 
 @router.websocket("/ws/chat")
 async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(database.get_db)):
@@ -103,35 +139,19 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(databas
             message_ids_by_expert = []
             list_of_experts = converstation_payload.expert.split(",")
             if len(list_of_experts) > 0:
+                tasks = []
                 for expert_id in list_of_experts:
-                    expert_asnwer = await answer_as_an_expert(
-                        get_expert_by_id(expert_id), 
+                    task = process_expert_stream(
+                        websocket,
+                        expert_id,
                         data["message"],
-                        serialized_history
+                        serialized_history,
+                        map_id_to_message,
+                        message_ids_by_expert
                     )
-
-                    async for response in expert_asnwer:
-                        if response.choices[0].finish_reason != "stop":
-                            content = response.choices[0].delta.content
-                            if response.id not in map_id_to_message:
-                                map_id_to_message[response.id] = {
-                                    "message": content,
-                                    "message_id": response.id,
-                                    "expert": expert_id,
-                                }
-                                message_ids_by_expert.append(response.id)
-                            else:
-                                map_id_to_message[response.id]["message"] += content
-
-                        await websocket.send_json({
-                            "message": content,
-                            "message_id": response.id,
-                            "expert": get_expert_by_id(expert_id),
-                            "created_at": datetime.now(timezone.utc).isoformat(),
-                            "is_stop": response.choices[0].finish_reason == "stop",
-                            "role":"bot"
-                        })
+                    tasks.append(task)
             
+                await asyncio.gather(*tasks)
 
             if len(message_ids_by_expert) > 0:
                 for message_id in message_ids_by_expert:
